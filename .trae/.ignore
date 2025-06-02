@@ -1,0 +1,177 @@
+# 环境配置文件
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node.js 相关
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.npm
+.yarn-integrity
+
+# 日志文件
+logs/
+logs
+*.log
+
+# 运行时数据
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率目录
+coverage/
+coverage
+.nyc_output
+*.lcov
+
+# 依赖目录
+node_modules/
+jspm_packages/
+bower_components
+web_modules/
+
+# TypeScript 缓存
+*.tsbuildinfo
+
+# 缓存文件
+.npm
+.eslintcache
+.cache
+.parcel-cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# 可选的 REPL 历史
+.node_repl_history
+
+# 输出的 npm 包
+*.tgz
+
+# Yarn 完整性文件
+.yarn-integrity
+
+# 构建输出
+build/
+build/Release
+dist/
+dist
+dist-ssr
+out/
+out
+.next
+.nuxt
+.vuepress/dist
+.storybook-out
+.out
+
+# Gatsby 文件
+.cache/
+# 注释下一行如果你想要提交 gatsby 文件
+# public
+
+# 临时文件夹
+tmp/
+temp/
+
+# 目录用于仪器化的库由 jscoverage/JSCover 生成
+lib-cov
+
+# Grunt 中间存储
+.grunt
+
+# node-waf 配置
+.lock-wscript
+
+# Serverless 目录
+.serverless/
+
+# FuseBox 缓存
+.fusebox/
+
+# DynamoDB Local 文件
+.dynamodb/
+
+# TernJS 端口文件
+.tern-port
+
+# Stores VSCode 版本用于远程容器
+.vscode-server
+
+# 测试相关
+test-results/
+/cypress/videos/
+/cypress/screenshots/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 密钥和证书
+*.key
+*.pem
+*.crt
+*.csr
+
+# 配置文件（可能包含敏感信息）
+config.json
+config.js
+secrets.json
+
+# IDE 和编辑器文件
+.vscode/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# 操作系统生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 压缩文件
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# 上传的文件
+uploads/
+static/uploads/
+public/uploads/
+
+# 本地开发文件
+.local
+*.local
