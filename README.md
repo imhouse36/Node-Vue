@@ -1,1 +1,1 @@
-# Node-Vue-MongoDB
+# Node + Vue
