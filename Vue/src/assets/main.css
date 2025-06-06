@@ -1,7 +1,58 @@
 @import './base.css';
+@import './responsive.css';
+
+/* 引入TailwindCSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Element Plus 与 TailwindCSS 样式冲突处理 */
+.el-button {
+  border: 1px solid var(--el-border-color);
+}
+
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--el-border-color-base) inset;
+}
+
+/* 确保Element Plus组件不受TailwindCSS重置影响 */
+.el-popper {
+  box-sizing: border-box;
+}
+
+.el-dialog,
+.el-message-box {
+  box-sizing: border-box;
+}
+
+/* TailwindCSS与Element Plus兼容性增强 */
+@layer base {
+  /* 保护Element Plus的字体设置 */
+  .el-button,
+  .el-input,
+  .el-select {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* 自定义组件样式可以放在这里 */
+}
+
+@layer utilities {
+  /* 自定义工具类可以放在这里 */
+  .text-el-primary {
+    color: var(--el-color-primary);
+  }
+  
+  .bg-el-primary {
+    background-color: var(--el-color-primary);
+  }
+}
 
 #app {
-  max-width: 1280px;
+  /* 移除最大宽度限制，让应用适应大屏幕 */
+  width: 100%;
   margin: 0 auto;
   padding: 2rem;
   font-weight: normal;
@@ -21,15 +72,16 @@ a,
   }
 }
 
+/* 移除大屏幕时的网格布局，保持正常流式布局 */
 @media (min-width: 1024px) {
   body {
-    display: flex;
-    place-items: center;
+    /* 移除flex布局和居中对齐 */
+    min-height: 100vh;
   }
 
   #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
+    /* 保持正常的块级元素布局 */
+    width: 100%;
+    padding: 2rem;
   }
 }
