@@ -1,0 +1,161 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Node-Vue 全栈项目核心规则
+
+这是一个前后端分离的现代化全栈应用，采用 Vue 3 和 Node.js 技术栈。请始终遵循以下核心规则：
+
+## 🎯 项目架构
+
+### 前端技术栈 (Vue/)
+- **核心框架**: Vue 3.5.13 (Composition API)
+- **构建工具**: Vite 6.2.4 (替代vue-cli)
+- **UI组件库**: Element Plus 2.9.11
+- **CSS框架**: TailwindCSS 3.4.0 (已解决与Element Plus冲突)
+- **HTTP客户端**: Axios 1.9.0
+
+### 后端技术栈 (Node/)
+- **运行环境**: Node.js + Express 5.1.0
+- **数据库**: MongoDB + Mongoose 8.15.1
+- **身份认证**: JWT + bcryptjs 3.0.2
+- **开发语言**: TypeScript
+- **安全中间件**: helmet、cors
+
+## 📁 项目目录结构
+
+参考主项目结构 [README.md](mdc:README.md)：
+
+```
+Node-Vue/
+├── Vue/                    # 🎨 前端项目目录
+│   ├── src/               # 源代码
+│   ├── .env.development   # 开发环境配置
+│   ├── .env.production    # 生产环境配置
+│   └── tailwind.config.js # TailwindCSS配置
+├── Node/                  # 🚀 后端项目目录
+│   ├── src/               # 源代码
+│   ├── .env.development   # 开发环境配置
+│   └── .env.production    # 生产环境配置
+└── Rules/                 # 📋 开发规则文档
+```
+
+## 🔧 环境变量管理
+
+### 前端环境变量 (Vue/.env.development)
+- `VITE_API_BASE_URL`: 后端API地址 (默认: http://localhost:3000/api)
+- `VITE_APP_TITLE`: 应用标题
+- `VITE_EL_SIZE`: Element Plus组件大小
+- `VITE_THEME_MODE`: 主题模式
+
+### 后端环境变量 (Node/.env.development)
+- `NODE_ENV`: 环境模式
+- `PORT`: 服务器端口 (默认: 3000)
+- `FRONTEND_URL`: 前端地址 (CORS配置)
+- `JWT_SECRET`: JWT密钥
+- `DATABASE_URL`: MongoDB连接字符串
+
+## 🎨 样式框架使用规则
+
+### TailwindCSS + Element Plus 兼容性
+- ✅ 项目已解决两个框架的样式冲突
+- ✅ 可以混合使用 Element Plus 组件和 TailwindCSS 类
+- ✅ 参考配置文件: Vue/tailwind.config.js
+
+### 示例用法
+```vue
+<template>
+  <!-- 可以混合使用两种样式 -->
+  <el-button class="bg-blue-500 hover:bg-blue-600">
+    Element Plus + TailwindCSS
+  </el-button>
+</template>
+```
+
+## 🚀 开发启动规则
+
+### 开发环境启动顺序
+1. **后端服务** (优先启动)
+   ```bash
+   cd Node
+   npm run dev  # 启动在 http://localhost:3000
+   ```
+
+2. **前端服务**
+   ```bash
+   cd Vue
+   npm run dev  # 启动在 http://localhost:5173
+   ```
+
+### 端口配置
+- 前端开发服务器: `http://localhost:5173`
+- 后端API服务器: `http://localhost:3000`
+- API接口路径: `http://localhost:3000/api`
+
+## 📋 代码规范
+
+### 通用规则
+- 使用 TypeScript (后端必须，前端推荐)
+- 遵循 ESLint 和 Prettier 配置
+- 组件和函数必须包含注释
+- CSS 行数超过 100 时，应独立为外部文件
+
+### Vue 3 开发规范
+- 优先使用 Composition API
+- 组件命名使用 PascalCase
+- 事件命名使用 kebab-case
+- 响应式数据使用 ref/reactive
+
+### Node.js 开发规范
+- 使用 Express 框架
+- 路由模块化管理
+- 中间件合理使用
+- 错误处理统一管理
+
+## 🔒 安全配置
+
+### 认证授权
+- 使用 JWT 进行身份认证
+- 密码使用 bcryptjs 加密
+- 设置合理的 token 过期时间
+
+### 安全中间件
+- helmet: 设置安全HTTP头
+- cors: 跨域资源共享配置
+- 输入验证和数据清理
+
+## 🛠️ 构建部署
+
+### 生产环境构建
+```bash
+# 前端构建
+cd Vue && npm run build
+
+# 后端生产启动
+cd Node && npm start
+```
+
+### 环境切换
+- 开发环境: 使用 .env.development
+- 生产环境: 修改 .env.production 文件
+
+## 📦 依赖管理
+
+### 包管理器
+- 统一使用 npm
+- 定期更新依赖版本
+- 生产依赖和开发依赖明确分离
+
+### 版本控制
+- 重要依赖版本锁定
+- package-lock.json 提交到版本控制
+- 定期进行安全审计
+
+---
+
+**重要提醒**: 
+- 项目已完成基础配置，可直接进行开发
+- 遇到问题请查看 Rules/ 目录下的详细开发指南
+- 生产环境部署前务必修改相关环境变量
+

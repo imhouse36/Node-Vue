@@ -1,17 +1,19 @@
 # Node.js 高效开发指南
 
 ## 🎯 推荐技术栈
-- **核心**: Node.js + Express + TypeScript
-- **数据库**: MongoDB (小项目可用 SQLite)
-- **认证**: JWT + bcrypt
-- **测试**: Jest
+- **运行环境**: Node.js + Express 5.1.0
+- **数据库**: MongoDB + Mongoose 8.15.1
+- **身份认证**: JWT + bcryptjs 3.0.2
+- **安全中间件**: helmet、cors
+- **开发工具**: nodemon、TypeScript、Jest
+- **环境配置**: dotenv
 
 ## 📁 简洁项目结构
 ```
 src/
 ├── routes/          # 路由定义
 ├── controllers/     # 业务逻辑
-├── models/         # 数据模型
+├── models/         # 数据模型（Mongoose）
 ├── middleware/     # 中间件
 ├── utils/          # 工具函数
 ├── config/         # 配置文件
@@ -20,7 +22,7 @@ src/
 
 ## 🔧 核心开发原则
 
-### 1. 环境配置 (简化版)
+### 1. 环境配置 (与项目保持一致)
 ```javascript
 // config/index.js
 const config = {
@@ -28,12 +30,16 @@ const config = {
   port: process.env.PORT || 3000,
   
   database: {
-    url: process.env.MONGODB_URL || 'mongodb://localhost:27017/myapp'
+    url: process.env.DATABASE_URL || 'mongodb://localhost:27017/nodeapp_dev'
   },
   
   jwt: {
-    secret: process.env.JWT_SECRET || 'dev-secret',
-    expiresIn: '7d'
+    secret: process.env.JWT_SECRET || 'dev-secret-key',
+    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+  },
+  
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173'
   }
 }
 
@@ -41,17 +47,19 @@ module.exports = config
 ```
 
 ```bash
-# .env.development
+# .env.development (与项目一致)
 NODE_ENV=development
 PORT=3000
-MONGODB_URL=mongodb://localhost:27017/myapp_dev
-JWT_SECRET=dev_secret
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET=dev-secret-key
+DATABASE_URL=mongodb://localhost:27017/nodeapp_dev
 
-# .env.production
+# .env.production (与项目一致)
 NODE_ENV=production
 PORT=8080
-MONGODB_URL=mongodb://your-server/myapp_prod
-JWT_SECRET=your_production_secret
+FRONTEND_URL=你的前端生产地址
+JWT_SECRET=生产环境的安全密钥
+DATABASE_URL=mongodb://your-server/nodeapp_prod
 ```
 
 ### 2. 控制器模式 (简洁版)
@@ -140,67 +148,140 @@ const authMiddleware = (req, res, next) => {
 module.exports = authMiddleware
 ```
 
-### 4. 数据模型设计
+### 4. MongoDB + Mongoose 数据模型设计
 ```javascript
 // models/User.js
 const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
+const bcryptjs = require('bcryptjs')
 
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: true,
+    required: [true, 'Username is required'],
     unique: true,
-    trim: true
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters long'],
+    maxlength: [30, 'Username cannot exceed 30 characters']
   },
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true,
-    lowercase: true
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
   password: {
     type: String,
-    required: true,
-    minlength: 6
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters long']
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'moderator'],
+    default: 'user'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: {
+    transform: function(doc, ret) {
+      delete ret.password // 在JSON输出中隐藏密码
+      return ret
+    }
+  }
 })
 
-// 密码加密
+// 密码加密 (使用 bcryptjs)
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next()
-  this.password = await bcrypt.hash(this.password, 10)
+  this.password = await bcryptjs.hash(this.password, 10)
   next()
 })
 
-// 密码验证
+// 密码验证 (使用 bcryptjs)
 userSchema.methods.comparePassword = function(password) {
-  return bcrypt.compare(password, this.password)
+  return bcryptjs.compare(password, this.password)
 }
 
 module.exports = mongoose.model('User', userSchema)
 ```
 
-## 🛡️ 基础安全设置
+### 5. 数据库连接配置
+```javascript
+// config/database.js
+const mongoose = require('mongoose')
+const config = require('./index')
+
+/**
+ * 连接到MongoDB数据库
+ */
+const connectDatabase = async () => {
+  try {
+    console.log('🔄 Connecting to MongoDB...')
+    
+    await mongoose.connect(config.database.url, {
+      bufferCommands: false
+    })
+    
+    console.log('✅ MongoDB connected successfully')
+    console.log(`📍 Database: ${config.database.url.split('/').pop()}`)
+    
+    return mongoose.connection
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message)
+    throw error
+  }
+}
+
+module.exports = { connectDatabase, mongoose }
+```
+
+## 🛡️ 基础安全设置 (完整版)
 ```javascript
 // app.js
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
+const { connectDatabase } = require('./config/database')
+const config = require('./config')
 
 const app = express()
 
-// 基础安全和跨域
+// 基础安全头部
 app.use(helmet())
+
+// CORS 配置
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:8080'
+  origin: config.cors.origin,
+  credentials: true
 }))
 
 // 请求解析
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+// 启动服务器
+const startServer = async () => {
+  try {
+    // 连接数据库
+    await connectDatabase()
+    console.log('✅ Database connected successfully')
+    
+    // 启动服务器
+    app.listen(config.port, () => {
+      console.log(`🚀 Server is running on port ${config.port}`)
+      console.log(`📍 Environment: ${config.env}`)
+      console.log(`🌐 Access URL: http://localhost:${config.port}`)
+    })
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message)
+    process.exit(1)
+  }
+}
 
 // 统一错误处理
 app.use((err, req, res, next) => {
@@ -210,19 +291,22 @@ app.use((err, req, res, next) => {
     message: '服务器内部错误'
   })
 })
+
+startServer()
 ```
 
 ## 🚀 性能要点
-- 使用连接池管理数据库连接
+- 使用 MongoDB 连接池管理数据库连接
 - 频繁查询的数据考虑缓存
 - 大文件上传使用流处理
 - 生产环境使用 PM2 或类似工具
+- Mongoose 查询优化和索引设计
 
 ## ✅ 开发检查清单 (3项核心)
 开发完成后检查：
 - [ ] **错误处理**: 是否添加了 try-catch 和适当的错误响应
-- [ ] **数据验证**: 是否验证了请求参数和数据格式
-- [ ] **安全考虑**: 敏感操作是否需要认证，密码是否加密
+- [ ] **数据验证**: 是否验证了请求参数和数据格式，使用了 Mongoose 验证
+- [ ] **安全考虑**: 敏感操作是否需要认证，密码是否用 bcryptjs 加密
 
 ## 📚 常用代码片段
 
@@ -247,23 +331,36 @@ const sendError = (res, message = '错误', statusCode = 400) => {
 module.exports = { sendSuccess, sendError }
 ```
 
-### 参数验证
+### Mongoose 参数验证
 ```javascript
 // middleware/validate.js
-const validate = (schema) => {
-  return (req, res, next) => {
-    const { error } = schema.validate(req.body)
-    if (error) {
+const { body, validationResult } = require('express-validator')
+
+const validateUser = [
+  body('username')
+    .isLength({ min: 3, max: 30 })
+    .withMessage('用户名长度必须在3-30字符之间'),
+  body('email')
+    .isEmail()
+    .withMessage('请输入有效的邮箱地址'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('密码至少需要6个字符'),
+  
+  (req, res, next) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: error.details[0].message
+        message: '数据验证失败',
+        errors: errors.array()
       })
     }
     next()
   }
-}
+]
 
-module.exports = validate
+module.exports = { validateUser }
 ```
 
 ### 路由定义
@@ -272,11 +369,12 @@ module.exports = validate
 const express = require('express')
 const userController = require('../controllers/userController')
 const authMiddleware = require('../middleware/auth')
+const { validateUser } = require('../middleware/validate')
 
 const router = express.Router()
 
 router.get('/:id', userController.getUser)
-router.post('/', userController.createUser)
+router.post('/', validateUser, userController.createUser)
 router.put('/:id', authMiddleware, userController.updateUser)
 
 module.exports = router
@@ -284,7 +382,7 @@ module.exports = router
 
 ## 📊 日志建议
 ```javascript
-// 简单的日志处理
+// utils/logger.js
 const log = (level, message, data = null) => {
   const timestamp = new Date().toISOString()
   console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`, data || '')
@@ -293,5 +391,12 @@ const log = (level, message, data = null) => {
 module.exports = { log }
 ```
 
+## 🗄️ MongoDB 最佳实践
+- 合理设计 Schema 和索引
+- 使用 Mongoose 的内置验证功能
+- 避免深层嵌套文档
+- 合理使用 populate 进行关联查询
+- 生产环境开启 MongoDB 复制集
+
 ---
-**记住**: 先让功能跑起来，再考虑优化。简单直接的代码比过度设计的代码更容易维护。 
+**记住**: 专注使用 MongoDB + Mongoose，确保数据库的一致性和可靠性。简单直接的代码比过度设计的代码更容易维护。 
