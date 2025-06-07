@@ -5,16 +5,45 @@
 
 ## 🔴 强制项目结构 (AI必须遵循)
 
+为了确保后端代码的逻辑清晰和模块化，所有Node.js代码必须遵循以下目录结构。AI在生成或修改文件时，必须将文件放置在正确的目录中。
+
 ```
-必须结构:
-src/
-├── app.js           # 应用入口文件
-├── routes/          # 路由定义文件
-├── controllers/     # 业务逻辑控制器  
-├── models/          # Mongoose数据模型
-├── middleware/      # 中间件函数
-└── utils/           # 工具函数
+Node/
+└── src/                          # 🏠 后端源代码根目录
+    ├── app.js                    # 🚀 应用入口和Express配置
+    ├── config/                   # ⚙️  配置文件
+    │   └── db.js                 # 🗄️  数据库连接逻辑
+    ├── controllers/              # 🎯 控制器 (处理请求, 调用服务)
+    │   └── userController.js     # 👤 用户相关控制器
+    ├── middleware/               # 🛡️  Express中间件
+    │   └── authMiddleware.js     # 🔐 身份验证中间件
+    ├── models/                   # 📊 Mongoose数据模型
+    │   └── User.js               # 👥 用户数据模型
+    ├── routes/                   # 🛣️  路由定义
+    │   └── users.js              # 🔗 用户相关路由
+    └── utils/                    # 🔧 工具函数
+        └── jwtHelper.js          # 🎫 JWT辅助函数
 ```
+
+### 目录及文件说明
+
+#### 📁 核心目录
+
+| 目录/文件 | 层级类型 | 功能说明 |
+|-----------|----------|----------|
+| **`src/`** | 根目录 | 所有后端源代码的根目录 |
+| **`app.js`** | **[应用入口]** | Express应用的启动文件，负责初始化Express实例、加载全局中间件（如CORS、body-parser）、装载所有路由，并启动HTTP服务器 |
+
+#### 📂 功能模块目录
+
+| 目录 | 层级类型 | 功能说明 | 示例文件 |
+|------|----------|----------|----------|
+| **`config/`** | 配置层 | 存放项目的所有配置文件 | `db.js` - 数据库连接逻辑 |
+| **`controllers/`** | **[业务逻辑层]** | 存放处理具体业务逻辑的控制器函数，接收`req`和`res`对象，执行数据库操作，返回标准JSON响应 | `userController.js` - 用户相关控制器 |
+| **`middleware/`** | 中间件层 | 存放可复用的Express中间件 | `authMiddleware.js` - JWT验证中间件 |
+| **`models/`** | **[数据层]** | 存放所有的Mongoose数据模型（Schema），定义数据集合的结构、字段类型和验证规则 | `User.js` - 用户数据模型 |
+| **`routes/`** | **[路由层]** | 定义API的URL端点，将HTTP请求映射到controllers中对应的处理函数 | `users.js` - 用户相关路由 |
+| **`utils/`** | 工具层 | 存放与业务无关的辅助函数 | `jwtHelper.js` - JWT生成和验证函数 |
 
 ## 🔴 强制响应格式标准 (前后端统一)
 
