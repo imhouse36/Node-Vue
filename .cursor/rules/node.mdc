@@ -13,16 +13,43 @@ alwaysApply: false
 - **开发工具**: nodemon、TypeScript、Jest
 - **环境配置**: dotenv
 
-## 📁 简洁项目结构
+## 📁 详细项目结构 (与实际项目完全匹配)
 ```
-src/
-├── routes/          # 路由定义
-├── controllers/     # 业务逻辑
-├── models/         # 数据模型（Mongoose）
-├── middleware/     # 中间件
-├── utils/          # 工具函数
-├── config/         # 配置文件
-└── types/          # TypeScript类型
+Node/
+├── src/                      # 源代码
+│   ├── api/                  # (或 routes) API路由定义
+│   │   ├── index.ts          # 组合所有路由
+│   │   ├── auth.routes.ts    # 认证相关路由
+│   │   └── user.routes.ts    # 用户相关路由
+│   ├── config/               # 环境与配置
+│   │   ├── database.ts       # 数据库连接 (Mongoose)
+│   │   └── index.ts          # 导出所有配置 (dotenv)
+│   ├── controllers/          # 控制器 (处理请求、调用服务、返回响应)
+│   │   ├── auth.controller.ts    # 认证控制器
+│   │   └── user.controller.ts    # 用户控制器
+│   ├── middlewares/          # 中间件
+│   │   ├── auth.middleware.ts        # JWT验证
+│   │   └── errorHandler.middleware.ts # 统一错误处理
+│   ├── models/               # Mongoose数据模型
+│   │   └── User.model.ts     # 用户模型
+│   ├── services/             # 业务逻辑层 (可选但推荐，解耦控制器和模型)
+│   │   ├── auth.service.ts   # 认证服务
+│   │   └── user.service.ts   # 用户服务
+│   ├── types/                # TypeScript类型定义
+│   │   ├── express/index.d.ts    # Express Request/Response 扩展
+│   │   └── jwt.d.ts          # JWT Payload 类型
+│   ├── utils/                # 工具函数
+│   │   ├── logger.ts         # 日志工具
+│   │   └── ApiResponse.ts    # 统一API响应格式
+│   └── server.ts             # (或 app.ts) Express应用入口
+├── tests/                    # Jest 测试文件
+│   ├── user.test.ts
+│   └── __mocks__/
+├── .env.development          # 开发环境配置
+├── .env.production           # 生产环境配置
+├── jest.config.js            # Jest测试配置
+├── tsconfig.json             # TypeScript配置
+└── package.json
 ```
 
 ## 🔧 核心开发原则
