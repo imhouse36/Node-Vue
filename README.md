@@ -1,160 +1,156 @@
-# Node + Vue 全栈项目
+# Node + Vue 全栈项目 - AI开发规则
 
-本项目为前后端分离的现代化全栈应用，采用Vue 3和Node.js技术栈。
+> **AI指令**: 严格遵循此文档的所有规则和模板进行代码生成
 
-## ⚡ 技术栈
+## 🔴 核心约束规则 (AI必须遵循)
 
-### 🎨 前端技术栈
-- **核心框架**: Vue 3.5.13 (Composition API)
-- **构建工具**: Vite 6.2.4 (替代vue-cli)
-- **UI组件库**: Element Plus 2.9.11
-- **CSS框架**: TailwindCSS 3.4.0 (已解决与Element Plus冲突)
-- **HTTP客户端**: Axios 1.9.0
-- **开发工具**: Vue DevTools、自动导入插件
-
-### 🚀 后端技术栈
-- **运行环境**: Node.js + Express 5.1.0
-- **数据库**: MongoDB + Mongoose 8.15.1
-- **身份认证**: JWT + bcryptjs 3.0.2
-- **安全中间件**: helmet、cors
-- **开发工具**: nodemon、TypeScript、Jest
-- **环境配置**: dotenv
-
-## 🎯 项目特色
-
-✅ **样式框架兼容**: 已解决TailwindCSS与Element Plus冲突  
-✅ **环境变量管理**: 完整的开发/生产环境配置  
-✅ **TypeScript支持**: 后端完整TS支持  
-✅ **安全性**: JWT认证 + helmet安全头  
-✅ **现代化构建**: Vite极速热更新
-
-## 📁 项目结构
-
+### 项目结构约束
 ```
-Node-Vue/
-├── Vue/                      # 🎨 前端项目
-│   ├── public/               # 静态资源
-│   ├── src/                  # 源代码
-│   │   ├── api/              # API请求模块
-│   │   ├── assets/           # 静态资源 (css/images)
-│   │   ├── components/       # 全局可复用组件
-│   │   ├── composables/      # 组合式函数 (Hooks)
-│   │   ├── layouts/          # 页面布局
-│   │   ├── router/           # 路由配置
-│   │   ├── stores/           # 状态管理 (Pinia)
-│   │   ├── types/            # TypeScript类型定义
-│   │   ├── utils/            # 工具函数
-│   │   ├── views/            # 页面级组件
-│   │   ├── App.vue           # 根组件
-│   │   └── main.ts           # 应用入口
-│   ├── .env.development      # 开发环境配置
-│   ├── .env.production       # 生产环境配置
-│   ├── tailwind.config.js    # TailwindCSS配置
-│   ├── vite.config.ts        # Vite配置
-│   └── package.json          # 前端依赖
-├── Node/                     # 🚀 后端项目
-│   ├── src/                  # 源代码
-│   │   ├── api/              # API路由定义
-│   │   ├── config/           # 环境与配置
-│   │   ├── controllers/      # 控制器
-│   │   ├── middlewares/      # 中间件
-│   │   ├── models/           # Mongoose数据模型
-│   │   ├── services/         # 业务逻辑层
-│   │   ├── types/            # TypeScript类型定义
-│   │   ├── utils/            # 工具函数
-│   │   └── server.ts         # Express应用入口
-│   ├── tests/                # Jest 测试文件
-│   ├── .env.development      # 开发环境配置
-│   ├── .env.production       # 生产环境配置
-│   ├── tsconfig.json         # TypeScript配置
-│   └── package.json          # 后端依赖
-└── Rules/                    # 📋 开发规则文档
+必须结构:
+Vue/src/                 # 前端代码目录
+Node/src/               # 后端代码目录
+Rules/                  # 规则文档目录
 ```
 
-## 🚀 快速开始
+### 技术栈限制
+```
+前端技术栈: Vue 3 + Element Plus + TailwindCSS + Vite
+后端技术栈: Node.js + Express + MongoDB + Mongoose
+API响应格式: {success: boolean, data?: any, message: string}
+认证方式: JWT
+```
 
-### 1. 克隆项目
+### 启动命令约束
 ```bash
-git clone https://github.com/imhouse36/Node-Vue
-cd Node-Vue
+# 后端启动 (端口3000)
+cd Node && npm run dev
+
+# 前端启动 (端口5173)  
+cd Vue && npm run dev
 ```
 
-### 2. 安装依赖
-```bash
-# 安装前端依赖
-cd Vue
-npm install
+## 🔴 API响应格式标准 (强制执行)
 
-# 安装后端依赖
-cd ../Node
-npm install
+### 标准响应模板
+```typescript
+// 成功响应 - 所有API必须使用此格式
+{
+  success: true,
+  data: T,                    // 实际数据
+  message: string            // 操作描述
+}
+
+// 错误响应 - 所有API必须使用此格式  
+{
+  success: false,
+  message: string            // 错误描述
+}
 ```
 
-### 3. 环境配置
-项目已配置开发环境变量，可直接启动。生产环境需要修改`.env.production`文件。
-
-### 4. 启动开发服务器
-```bash
-# 启动前端 (http://localhost:5173)
-cd Vue
-npm run dev
-
-# 启动后端 (http://localhost:3000)
-cd Node
-npm run dev
+### HTTP状态码规范
+```
+200: 请求成功
+201: 创建成功  
+400: 请求参数错误
+401: 未授权
+404: 资源不存在
+500: 服务器错误
 ```
 
-## 🔧 环境配置说明
+## 🔴 代码生成规则 (AI强制遵循)
 
-### 前端环境变量 (Vue/.env.development)
-```env
-VITE_API_BASE_URL=http://localhost:3000/api  # 后端API地址
-VITE_APP_TITLE=Node-Vue应用                  # 应用标题
-VITE_EL_SIZE=default                        # Element Plus组件大小
-VITE_THEME_MODE=light                       # 主题模式
-```
+### Vue组件生成规则
+```typescript
+必须使用:
+- script setup语法
+- Element Plus组件 (禁止原生HTML标签替代)
+- ref/reactive响应式数据
+- ElMessage消息提示
+- v-loading加载状态
 
-### 后端环境变量 (Node/.env.development)
-```env
-NODE_ENV=development                        # 环境模式
-PORT=3000                                  # 服务器端口
-FRONTEND_URL=http://localhost:5173         # 前端地址(CORS)
-JWT_SECRET=dev-secret-key                  # JWT密钥
-DATABASE_URL=mongodb://localhost:27017/nodeapp_dev  # 数据库连接
-```
+组件结构模板:
+<script setup>
+import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
+// 响应式数据定义
+// 函数定义
+</script>
 
-## 🎨 样式框架使用
-
-本项目集成了Element Plus和TailwindCSS，已解决样式冲突：
-
-```vue
 <template>
-  <!-- 可以混合使用两种样式 -->
-  <el-button class="bg-blue-500 hover:bg-blue-600">
-    Element Plus + TailwindCSS
-  </el-button>
+  <!-- Element Plus组件 + TailwindCSS类名 -->
 </template>
 ```
 
-## 📋 开发规则
+### Node.js接口生成规则
+```javascript
+必须使用:
+- Express框架
+- async/await语法
+- try-catch错误处理
+- 标准响应格式
+- Mongoose数据库操作
 
-请阅读`Rules/`目录下的开发规范文档，包含：
-- Vue.js开发指南
-- Node.js开发指南  
-- 代码规范和最佳实践
-
-## 🛠️ 构建部署
-
-```bash
-# 前端生产构建
-cd Vue
-npm run build
-
-# 后端生产启动
-cd Node
-npm start
+控制器模板:
+async function(req, res) {
+  try {
+    // 业务逻辑
+    res.json({ success: true, data: result, message: '操作成功' })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
 ```
 
-## 📧 问题反馈
+## 🔴 环境变量约束
 
-如遇到问题，请提交Issue或查看开发规则文档。
+### 前端环境变量 (Vue/.env.development)
+```bash
+VITE_API_BASE_URL=http://localhost:3000/api
+VITE_APP_TITLE=应用标题
+VITE_EL_SIZE=default
+```
+
+### 后端环境变量 (Node/.env.development)  
+```bash
+NODE_ENV=development
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+JWT_SECRET=dev-secret-key
+DATABASE_URL=mongodb://localhost:27017/app_dev
+```
+
+## 🔴 文件命名约束
+
+### 前端文件命名规则
+```
+组件文件: PascalCase (UserList.vue)
+页面文件: PascalCase (UserManage.vue)  
+组合函数: camelCase (useApi.js)
+工具函数: camelCase (formatDate.js)
+```
+
+### 后端文件命名规则
+```
+控制器: camelCase (userController.js)
+数据模型: PascalCase (User.js)
+路由文件: camelCase (users.js)
+中间件: camelCase (auth.js)
+```
+
+## 🔴 禁止行为清单
+
+```
+禁止行为:
+- 使用原生HTML替代Element Plus组件
+- 不加try-catch的异步函数
+- 偏离{success,data,message}响应格式
+- 在Vue中使用Class组件语法  
+- 在Node.js中使用同步操作
+- 手动编写CSS样式(使用TailwindCSS)
+```
+
+## 📋 参考文档链接
+
+- 详细Vue规则: `Rules/vue.md`
+- 详细Node规则: `Rules/node.md`
+- 项目约定: 严格按此README执行 
