@@ -3,6 +3,7 @@ description:
 globs: *.js,*/*.js,*/*/*.js,Node/*
 alwaysApply: false
 ---
+
 # Node.js 开发规则 - AI代码生成标准
 
 > **AI指令**: 生成Node.js代码时严格遵循此文档的所有规则和模板
@@ -34,7 +35,8 @@ src/
 // 错误响应模板 - 后端返回，前端接收  
 {
   success: false,
-  message: string            // 错误描述 (如: "参数错误", "用户不存在")
+  data: null,                 // 【优化】失败时，data字段必须为 null
+  message: string            // 对用户友好的、安全的错误描述
 }
 ```
 
@@ -45,11 +47,12 @@ src/
 ✓ 成功时使用 result.data 
 ✓ 失败时显示 result.message
 ✓ 网络错误显示 "网络连接失败"
+// 【优化】此部分逻辑将由前端的中央api.js模块统一处理
 ```
 
 ### 控制器函数模板 (强制结构)
 ```javascript
-// 所有控制器函数必须使用此模板
+// 【优化】所有控制器函数必须使用此黄金规则模板
 async function controllerName(req, res) {
   try {
     // 1. 参数验证
@@ -62,10 +65,15 @@ async function controllerName(req, res) {
       message: '操作描述'
     })
   } catch (error) {
+    // 1. 在后端记录详细错误
+    console.error(`[${req.method}] ${req.originalUrl} -> 错误:`, error);
+    
+    // 2. 向前端返回通用、安全的信息
     res.status(500).json({
       success: false,
-      message: error.message
-    })
+      data: null,
+      message: '服务器内部错误，请联系管理员'
+    });
   }
 }
 ```
@@ -76,7 +84,7 @@ async function controllerName(req, res) {
 ```
 必须遵循:
 - 必须使用async/await语法 (禁止Promise.then)
-- 必须使用try-catch错误处理
+- 必须使用try-catch错误处理，并遵循黄金规则模板
 - 必须返回{success,data,message}格式
 - 必须使用Express框架
 - 必须使用Mongoose操作数据库
@@ -95,191 +103,13 @@ async function controllerName(req, res) {
 ### 错误处理约束
 ```
 错误处理规则:
-- 所有async函数必须有try-catch
-- 数据库错误返回500状态码
-- 验证错误返回400状态码
-- 认证错误返回401状态码  
-- 资源不存在返回404状态码
+- 所有async函数必须有try-catch。
+- **【新增规则】catch块必须先用 `console.error` 记录完整错误。**
+- 数据库错误返回500状态码，并使用通用错误消息。
+- 验证错误返回400状态码。
+- 认证错误返回401状态码。  
+- 资源不存在返回404状态码。
 ```
-
-## 📦 功能模块 (需要时再添加)
-
-### 🟡 数据库连接 (需要存储数据时)
-
-<details>
-<summary>点击展开MongoDB连接代码 (可选功能)</summary>
-
-```javascript
-// 只有需要数据库时才添加这部分代码
-const mongoose = require('mongoose')
-
-/**
- * 连接MongoDB数据库
- */
-const connectDB = async () => {
-  try {
-    await mongoose.connect('mongodb://localhost:27017/myapp')
-    console.log('✅ 数据库连接成功')
-  } catch (error) {
-    console.error('❌ 数据库连接失败:', error.message)
-    process.exit(1)  // 连接失败就退出程序
-  }
-}
-
-// 在app.js中调用
-connectDB()
-```
-
-**简单的用户模型示例:**
-```javascript
-// models/User.js - 简单版本
-const mongoose = require('mongoose')
-
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  }
-}, {
-  timestamps: true  // 自动添加创建时间和更新时间
-})
-
-module.exports = mongoose.model('User', userSchema)
-```
-</details>
-
-### 🟡 用户认证 (需要登录功能时)
-
-<details>
-<summary>点击展开JWT认证代码 (可选功能)</summary>
-
-```javascript
-// 简单的JWT认证
-const jwt = require('jsonwebtoken')
-const bcryptjs = require('bcryptjs')
-
-/**
- * 生成JWT令牌
- */
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, 'your-secret-key', { expiresIn: '24h' })
-}
-
-/**
- * 验证密码
- */
-const comparePassword = async (password, hashedPassword) => {
-  return await bcryptjs.compare(password, hashedPassword)
-}
-
-/**
- * 加密密码  
- */
-const hashPassword = async (password) => {
-  return await bcryptjs.hash(password, 10)
-}
-
-/**
- * 认证中间件 - 保护需要登录的接口
- */
-const authMiddleware = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '')
-  
-  if (!token) {
-    return res.status(401).json({ 
-      success: false, 
-      message: '请先登录' 
-    })
-  }
-  
-  try {
-    const decoded = jwt.verify(token, 'your-secret-key')
-    req.user = decoded
-    next()
-  } catch (error) {
-    res.status(401).json({ 
-      success: false, 
-      message: '登录已过期，请重新登录' 
-    })
-  }
-}
-
-module.exports = { generateToken, comparePassword, hashPassword, authMiddleware }
-```
-</details>
-
-### 🟡 文件上传 (需要上传功能时)
-
-<details>
-<summary>点击展开文件上传代码 (可选功能)</summary>
-
-```javascript
-// 简单的文件上传
-const multer = require('multer')
-const path = require('path')
-
-// 配置文件存储
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/')  // 文件保存目录
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, uniqueName + path.extname(file.originalname))
-  }
-})
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 限制5MB
-  fileFilter: (req, file, cb) => {
-    // 只允许图片
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true)
-    } else {
-      cb(new Error('只能上传图片文件'))
-    }
-  }
-})
-
-// 使用示例
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: '请选择文件'
-      })
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        filename: req.file.filename,
-        url: `/uploads/${req.file.filename}`
-      },
-      message: '上传成功'
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: '上传失败: ' + error.message
-    })
-  }
-})
-```
-</details>
 
 ## 📚 常用代码模板 (复制即用)
 
@@ -298,10 +128,13 @@ async function getUsers(req, res) {
       message: '获取用户列表成功'
     })
   } catch (error) {
+    // 【优化】应用黄金规则
+    console.error(`[${req.method}] ${req.originalUrl} -> 错误:`, error);
     res.status(500).json({
       success: false,
-      message: '获取失败: ' + error.message
-    })
+      data: null,
+      message: '服务器内部错误'
+    });
   }
 }
 ```
@@ -310,7 +143,7 @@ async function getUsers(req, res) {
 ```vue
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { api } from '@/api.js' // 【优化】使用中央api模块
 
 const loading = ref(false)
 const userList = ref([])
@@ -318,17 +151,10 @@ const userList = ref([])
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const response = await fetch('/api/users')
-    const result = await response.json()
-    
-    if (result.success) {
-      userList.value = result.data
-      ElMessage.success(result.message)
-    } else {
-      ElMessage.error(result.message)
-    }
+    const result = await api.get('/users')
+    userList.value = result.data
   } catch (error) {
-    ElMessage.error('网络连接失败')
+    // 错误已由 api.js 统一处理
   } finally {
     loading.value = false
   }
@@ -345,198 +171,72 @@ onMounted(fetchUsers)
 const User = require('../models/User')
 
 const userController = {
-  /**
-   * 获取所有用户 - GET /api/users
-   */
+  // 【优化】所有函数的catch块都应用黄金规则
   async getUsers(req, res) {
     try {
-      const users = await User.find().select('-password')  // 不返回密码
-      res.json({
-        success: true,
-        data: users,
-        message: '获取用户列表成功'
-      })
+      const users = await User.find().select('-password')
+      res.json({ success: true, data: users, message: '获取用户列表成功' })
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: '服务器错误: ' + error.message
-      })
+      console.error(`[GET] /api/users -> 错误:`, error);
+      res.status(500).json({ success: false, data: null, message: '服务器错误' });
     }
   },
 
-  /**
-   * 获取单个用户 - GET /api/users/:id
-   */
   async getUser(req, res) {
     try {
-      const { id } = req.params
-      const user = await User.findById(id).select('-password')
-      
+      const user = await User.findById(req.params.id).select('-password')
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: '用户不存在'
-        })
+        return res.status(404).json({ success: false, data: null, message: '用户不存在' });
       }
-      
-      res.json({
-        success: true,
-        data: user,
-        message: '获取用户信息成功'
-      })
+      res.json({ success: true, data: user, message: '获取用户信息成功' });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: '服务器错误: ' + error.message
-      })
+      console.error(`[GET] /api/users/:id -> 错误:`, error);
+      res.status(500).json({ success: false, data: null, message: '服务器错误' });
     }
   },
 
-  /**
-   * 创建用户 - POST /api/users
-   */
   async createUser(req, res) {
     try {
-      const { username, email, password } = req.body
-      
-      // 检查用户是否已存在
-      const existingUser = await User.findOne({ 
-        $or: [{ email }, { username }] 
-      })
-      
+      const { username, email, password } = req.body;
+      const existingUser = await User.findOne({ $or: [{ email }, { username }] });
       if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: '用户名或邮箱已存在'
-        })
+        return res.status(400).json({ success: false, data: null, message: '用户名或邮箱已存在' });
       }
-      
-      // 创建新用户
-      const user = new User({ username, email, password })
-      await user.save()
-      
-      res.status(201).json({
-        success: true,
-        data: { id: user._id, username: user.username, email: user.email },
-        message: '用户创建成功'
-      })
+      const user = new User({ username, email, password });
+      await user.save();
+      res.status(201).json({ success: true, data: { id: user._id, username: user.username, email: user.email }, message: '用户创建成功' });
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: '创建失败: ' + error.message
-      })
+      console.error(`[POST] /api/users -> 错误:`, error);
+      res.status(500).json({ success: false, data: null, message: '服务器错误' });
     }
   },
 
-  /**
-   * 更新用户 - PUT /api/users/:id
-   */
   async updateUser(req, res) {
     try {
-      const { id } = req.params
-      const updates = req.body
-      
-      const user = await User.findByIdAndUpdate(
-        id, 
-        updates, 
-        { new: true, runValidators: true }
-      ).select('-password')
-      
+      const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).select('-password');
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: '用户不存在'
-        })
+        return res.status(404).json({ success: false, data: null, message: '用户不存在' });
       }
-      
-      res.json({
-        success: true,
-        data: user,
-        message: '用户信息更新成功'
-      })
+      res.json({ success: true, data: user, message: '用户信息更新成功' });
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: '更新失败: ' + error.message
-      })
+      console.error(`[PUT] /api/users/:id -> 错误:`, error);
+      res.status(500).json({ success: false, data: null, message: '服务器错误' });
     }
   },
 
-  /**
-   * 删除用户 - DELETE /api/users/:id
-   */
   async deleteUser(req, res) {
     try {
-      const { id } = req.params
-      const user = await User.findByIdAndDelete(id)
-      
+      const user = await User.findByIdAndDelete(req.params.id);
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: '用户不存在'
-        })
+        return res.status(404).json({ success: false, data: null, message: '用户不存在' });
       }
-      
-      res.json({
-        success: true,
-        data: null,
-        message: '用户删除成功'
-      })
+      res.json({ success: true, data: null, message: '用户删除成功' });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: '删除失败: ' + error.message
-      })
+      console.error(`[DELETE] /api/users/:id -> 错误:`, error);
+      res.status(500).json({ success: false, data: null, message: '服务器错误' });
     }
   }
 }
 
 module.exports = userController
 ```
-
-### 🔴 路由配置模板
-
-```javascript
-// routes/users.js - 用户路由
-const express = require('express')
-const userController = require('../controllers/userController')
-const router = express.Router()
-
-// 用户相关路由
-router.get('/', userController.getUsers)           // 获取所有用户
-router.get('/:id', userController.getUser)         // 获取单个用户
-router.post('/', userController.createUser)        // 创建用户
-router.put('/:id', userController.updateUser)      // 更新用户
-router.delete('/:id', userController.deleteUser)   // 删除用户
-
-module.exports = router
-
-// 在app.js中使用
-app.use('/api/users', require('./routes/users'))
-```
-
-## 🔴 代码验证规则 (AI自检)
-
-### 必须包含的元素
-```
-验证清单:
-✓ 函数声明为async
-✓ 包含try-catch块
-✓ 返回{success,data,message}格式
-✓ 设置正确的HTTP状态码
-✓ 使用Mongoose进行数据库操作
-✓ 参数验证 (req.body, req.params)
-✓ 错误消息清晰描述
-```
-
-### 禁止的代码模式
-```
-禁止模式:
-✗ 不使用async/await的异步函数
-✗ 缺少try-catch的异步操作
-✗ 返回格式不是{success,data,message}
-✗ 使用res.send()而非res.json()
-✗ 硬编码字符串而不使用环境变量
-✗ 同步操作(readFileSync等)
-✗ 直接暴露数据库错误给用户
-``` 

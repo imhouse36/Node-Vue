@@ -3,6 +3,7 @@ description:
 globs: *.vue,*/*/*.vue,Vue/*
 alwaysApply: false
 ---
+
 # Vue.js 开发规则 - AI代码生成标准
 
 > **AI指令**: 生成Vue.js代码时严格遵循此文档的所有规则和模板
@@ -11,9 +12,10 @@ alwaysApply: false
 
 ### Vue组件标准模板
 ```vue
+<!-- 【优化】模板使用中央api模块，逻辑更清晰 -->
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { api } from '@/api.js' // 引入中央api模块
 
 // 状态定义
 const loading = ref(false)
@@ -23,18 +25,10 @@ const data = ref(null)
 const fetchData = async () => {
   loading.value = true
   try {
-    const response = await fetch('/api/endpoint')
-    const result = await response.json()
-    
-    // 对接后端响应格式: {success, data, message}
-    if (result.success) {
-      data.value = result.data
-      ElMessage.success(result.message)
-    } else {
-      ElMessage.error(result.message)
-    }
+    const result = await api.get('/your-endpoint')
+    data.value = result.data
   } catch (error) {
-    ElMessage.error('网络连接失败')
+    // 错误已由 api.js 统一处理和记录
   } finally {
     loading.value = false
   }
@@ -57,83 +51,93 @@ onMounted(fetchData)
 ✓ 使用script setup语法
 ✓ 使用Element Plus组件 (禁止原生HTML)
 ✓ 使用ref/reactive管理状态
+✓ **【新增规则】必须通过中央 `src/api.js` 模块进行API请求**
 ✓ 添加v-loading指令
-✓ 使用ElMessage消息提示
-✓ 检查{success,data,message}响应格式
+✓ 错误消息由 `api.js` 统一处理，组件内无需重复提示
 ✓ 使用TailwindCSS布局类名
 ```
 
 ### 后端对接标准
 ```
 处理后端响应:
-- 检查 result.success 
-- 成功: 使用 result.data
-- 失败: 显示 result.message
-- 异常: 显示 "网络连接失败"
+- **【优化】所有API请求必须通过 `api.js` 模块。**
+- 组件内的 `try...catch` 主要用于控制 `loading` 状态和处理成功后的数据 `result.data`。
+- 错误提示和日志记录由 `api.js` 自动完成，组件内无需关心。
 ```
 
-## 📦 常用组件 (快速参考)
+## 【新增规则】🔴 强制使用中央API模块 (`api.js`)
 
-### 基础组件
-```vue
-<!-- 按钮 -->
-<el-button type="primary" :loading="loading" @click="handleClick">
-  提交
-</el-button>
+所有与后端API的通信都 **必须** 通过一个统一的 `src/api.js` 模块。此模块负责封装 `fetch`，并自动处理Token、请求头以及 **统一的日志记录**。组件内不应出现原生的 `fetch` 或 `axios` 调用。
 
-<!-- 输入框 -->
-<el-input v-model="form.name" placeholder="请输入" />
+### `api.js` 标准模板 (黄金规则)
+```javascript
+// src/api.js
+import { ElMessage } from 'element-plus';
 
-<!-- 表格 -->
-<el-table :data="tableData" v-loading="loading">
-  <el-table-column prop="name" label="名称" />
-  <el-table-column label="操作">
-    <template #default="{ row }">
-      <el-button size="small" @click="edit(row)">编辑</el-button>
-    </template>
-  </el-table-column>
-</el-table>
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-<!-- 表单 -->
-<el-form :model="form" ref="formRef">
-  <el-form-item label="用户名" prop="username">
-    <el-input v-model="form.username" />
-  </el-form-item>
-</el-form>
+async function request(url, options) {
+  const token = localStorage.getItem('authToken');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
 
-<!-- 弹窗 -->
-<el-dialog v-model="dialogVisible" title="标题">
-  <p>内容</p>
-  <template #footer>
-    <el-button @click="dialogVisible = false">取消</el-button>
-    <el-button type="primary" @click="confirm">确定</el-button>
-  </template>
-</el-dialog>
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(`${VITE_API_BASE_URL}${url}`, {
+      ...options,
+      headers,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      const errorMessage = result.message || `HTTP错误，状态码: ${response.status}`;
+      console.error(`API 操作失败: [${options.method || 'GET'}] ${url}`, result);
+      ElMessage.error(errorMessage);
+      return Promise.reject(result);
+    }
+
+    return result;
+  } catch (error) {
+    console.error(`API 请求错误: [${options.method || 'GET'}] ${url}`, error);
+    ElMessage.error('网络连接失败或服务器响应格式错误');
+    return Promise.reject(error);
+  }
+}
+
+export const api = {
+  get: (url, options = {}) => request(url, { ...options, method: 'GET' }),
+  post: (url, data, options = {}) => request(url, { ...options, method: 'POST', body: JSON.stringify(data) }),
+  put: (url, data, options = {}) => request(url, { ...options, method: 'PUT', body: JSON.stringify(data) }),
+  delete: (url, options = {}) => request(url, { ...options, method: 'DELETE' }),
+};
 ```
 
 ## 🔴 常用页面模板
 
 ### 列表页面
 ```vue
+<!-- 【优化】模板使用中央api模块 -->
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
+import { api } from '@/api.js'
 
 const loading = ref(false)
 const list = ref([])
 
 const fetchList = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await fetch('/api/data')
-    const result = await response.json()
-    if (result.success) {
-      list.value = result.data
-    } else {
-      ElMessage.error(result.message)
-    }
+    const result = await api.get('/data')
+    list.value = result.data
   } catch (error) {
-    ElMessage.error('网络连接失败')
+    // 错误已由 api.js 统一处理
   } finally {
     loading.value = false
   }
@@ -141,16 +145,12 @@ const fetchList = async () => {
 
 const deleteItem = async (id) => {
   try {
-    await ElMessageBox.confirm('确定删除吗？')
-    const response = await fetch(`/api/data/${id}`, { method: 'DELETE' })
-    const result = await response.json()
-    if (result.success) {
-      ElMessage.success(result.message)
-      fetchList()
-    } else {
-      ElMessage.error(result.message)
-    }
-  } catch (error) {}
+    await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
+    await api.delete(`/data/${id}`)
+    fetchList()
+  } catch (error) {
+    // 用户点击“取消”或API错误（已由api.js处理）
+  }
 }
 
 onMounted(fetchList)
@@ -168,7 +168,7 @@ onMounted(fetchList)
       <el-table-column label="操作">
         <template #default="{ row }">
           <el-button size="small">编辑</el-button>
-          <el-button size="small" type="danger" @click="deleteItem(row.id)">
+          <el-button size="small" type="danger" @click="deleteItem(row._id)">
             删除
           </el-button>
         </template>
@@ -180,9 +180,11 @@ onMounted(fetchList)
 
 ### 表单页面
 ```vue
+<!-- 【优化】模板使用中央api模块 -->
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { api } from '@/api.js'
 
 const loading = ref(false)
 const form = ref({
@@ -193,21 +195,11 @@ const form = ref({
 const submitForm = async () => {
   loading.value = true
   try {
-    const response = await fetch('/api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value)
-    })
-    
-    const result = await response.json()
-    if (result.success) {
-      ElMessage.success(result.message)
-      form.value = { name: '', email: '' }
-    } else {
-      ElMessage.error(result.message)
-    }
+    const result = await api.post('/data', form.value)
+    ElMessage.success(result.message)
+    form.value = { name: '', email: '' }
   } catch (error) {
-    ElMessage.error('网络连接失败')
+    // 错误已由 api.js 统一处理
   } finally {
     loading.value = false
   }
@@ -241,15 +233,14 @@ const submitForm = async () => {
 必须包含:
 ✓ script setup 语法
 ✓ loading 状态管理
-✓ result.success 判断
-✓ ElMessage 消息提示
+✓ **通过 `api.js` 进行所有网络请求**
 ✓ v-loading 指令
 ✓ Element Plus 组件
 ✓ TailwindCSS 类名
 
 禁止使用:
 ✗ 原生HTML标签 (button, input, table等)
-✗ alert() 弹窗
-✗ 同步请求
+✗ **在组件内直接使用 `fetch` 或 `axios`**
+✗ 在组件的 `catch` 块中重复调用 `ElMessage.error`
 ✗ 手写CSS样式
-``` 
+```

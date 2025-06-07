@@ -1,3 +1,4 @@
+
 # Node + Vue 全栈项目 - AI开发规则
 
 > **AI指令**: 严格遵循此文档的所有规则和模板进行代码生成
@@ -43,7 +44,8 @@ cd Vue && npm run dev
 // 错误响应 - 所有API必须使用此格式  
 {
   success: false,
-  message: string            // 错误描述
+  data: null,                 // 【优化】失败时，data字段必须为 null
+  message: string            // 对用户友好的、安全的错误描述
 }
 ```
 
@@ -65,15 +67,30 @@ cd Vue && npm run dev
 - script setup语法
 - Element Plus组件 (禁止原生HTML标签替代)
 - ref/reactive响应式数据
-- ElMessage消息提示
+- **【新增规则】必须通过中央 `src/api.js` 模块进行API请求**
 - v-loading加载状态
 
 组件结构模板:
 <script setup>
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
-// 响应式数据定义
-// 函数定义
+import { ref, onMounted } from 'vue'
+import { api } from '@/api.js' // 【优化】引入中央api模块
+
+const loading = ref(false)
+const dataList = ref([])
+
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const result = await api.get('/your-endpoint')
+    dataList.value = result.data
+  } catch (error) {
+    // 错误已由 api.js 统一处理和记录，此处通常无需额外操作
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchData)
 </script>
 
 <template>
@@ -87,6 +104,7 @@ import { ElMessage } from 'element-plus'
 - Express框架
 - async/await语法
 - try-catch错误处理
+- **【新增规则】必须在catch块中记录详细错误日志**
 - 标准响应格式
 - Mongoose数据库操作
 
@@ -96,7 +114,16 @@ async function(req, res) {
     // 业务逻辑
     res.json({ success: true, data: result, message: '操作成功' })
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
+    // 【优化】应用黄金规则
+    // 1. 在后端记录详细错误
+    console.error(`[${req.method}] ${req.originalUrl} -> 错误:`, error);
+    
+    // 2. 向前端返回通用、安全的信息
+    res.status(500).json({
+      success: false,
+      data: null,
+      message: '服务器内部错误，请联系管理员'
+    });
   }
 }
 ```
@@ -125,7 +152,7 @@ DATABASE_URL=mongodb://localhost:27017/app_dev
 ```
 组件文件: PascalCase (UserList.vue)
 页面文件: PascalCase (UserManage.vue)  
-组合函数: camelCase (useApi.js)
+API模块:  camelCase (api.js) // 【优化】明确api.js命名
 工具函数: camelCase (formatDate.js)
 ```
 
@@ -141,6 +168,8 @@ DATABASE_URL=mongodb://localhost:27017/app_dev
 
 ```
 禁止行为:
+- **【新增规则】在Vue组件中直接使用 `fetch` 或 `axios` (必须通过api.js)**
+- **【新增规则】后端 `catch` 块中不使用 `console.error` 记录日志**
 - 使用原生HTML替代Element Plus组件
 - 不加try-catch的异步函数
 - 偏离{success,data,message}响应格式
@@ -153,4 +182,4 @@ DATABASE_URL=mongodb://localhost:27017/app_dev
 
 - 详细Vue规则: `Rules/vue.md`
 - 详细Node规则: `Rules/node.md`
-- 项目约定: 严格按此README执行 
+- 项目约定: 严格按此README执行
